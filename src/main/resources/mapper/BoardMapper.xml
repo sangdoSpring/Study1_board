@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.sts.example.BoardMapper">
+
+	<resultMap id="boardMap"
+		type="com.sts.example.domain.BoardVO">
+		<id property="b_idx" column="b_idx" />
+		<result property="b_userId" column="b_userId" />
+		<result property="b_boardType" column="b_boardType" />
+		<result property="b_title" column="b_title" />
+		<result property="b_content" column="b_content" />
+		<result property="b_createDate" column="b_createDate" />
+		<result property="b_updateDate" column="b_updateDate" />
+	</resultMap>
+
+	<select id="boardSelect" resultMap="boardMap">
+		SELECT b_idx,
+		b_userId,
+		b_boardType,
+		b_title,
+		b_content,
+		b_createDate,
+		b_updateDate
+		FROM board
+	</select>
+
+	<insert id="boardInsert" parameterType="BoardVO">
+		INSERT INTO board (b_userId,
+		b_boardType,
+		b_title,
+		b_content)
+		VALUES (#{b_userId},
+		#{b_boardType},
+		#{b_title},
+		#{b_content}
+		)
+	</insert>
+
+	<select id="boardDetail" parameterType="String" resultMap="boardMap">
+		SELECT b_idx,
+		b_userId,
+		b_boardType,
+		b_title,
+		b_content,
+		b_createDate,
+		b_updateDate
+		FROM board
+		where b_idx = #{b_idx}
+
+	</select>
+
+	<update id="boardUpdate" parameterType="BoardVO">
+		update board
+		set b_title = #{b_title},
+		b_content = #{b_content},
+		b_updateDate = now()
+		where b_idx = #{b_idx}		
+	</update>
+	
+	<delete id="boardDelete" parameterType="String">
+	
+		delete from board where b_idx = #{b_idx}
+		
+	</delete>
+	
+	<delete id="boardDeleteList" parameterType="java.util.ArrayList">
+	
+		delete from board where b_idx in
+			<foreach collection="list" item="boardChk" open="(" close=")" separator=",">
+				#{boardChk}
+			</foreach>
+	
+	</delete>
+	
+	<select id="boardSearchList" parameterType="SearchCmmnVO" resultMap="boardMap">
+		<![CDATA[
+			SELECT AA.*
+          FROM(
+              SELECT A.*,
+                  FLOOR((A.rnum-1) / #{rows}+1) as pageNum 
+                  FROM (SELECT (@rownum := @rownum + 1) rnum ,
+								b_idx,
+							  	b_userId,
+								b_boardType,
+								b_title,
+								b_content,
+								b_createDate,
+								b_updateDate
+                        FROM board,(select @rownum:=0) rnum
+                        WHERE b_title like CONCAT('%',#{keyword},'%')
+                        ORDER BY rnum
+                       ) A    
+          ) AA
+          WHERE AA.pageNum = #{page}
+          ORDER BY AA.rnum
+		]]>
+		
+	</select>
+	
+	<!--  -->
+   <select id="selectSearchPagingListCnt" parameterType="SearchCmmnVO" resultType="HashMap">
+      SELECT COUNT(*) AS TOTAL_TOT_CNT,
+              CEIL(COUNT(*) / #{rows}) AS TOTAL_PAGE
+          FROM board
+          WHERE b_title like CONCAT('%',#{keyword},'%')
+          ORDER BY B_IDX ASC
+   </select>
+	
+	
+	<!-- 페이지 넘버 가져오는 쿼리문 -->
+   <select id="selectPagingList" parameterType="PagingVO" resultType="HashMap">
+      SELECT AA.*
+          FROM(
+              SELECT A.*,
+                  FLOOR((A.rnum-1) / #{rows}+1) as pageNum 
+                  FROM (SELECT (@rownum := @rownum + 1) rnum ,
+								b_idx,
+							  	b_userId,
+								b_boardType,
+								b_title,
+								b_content,
+								b_createDate,
+								b_updateDate
+                        FROM board,(select @rownum:=0) rnum
+                        ORDER BY rnum
+                       ) A    
+          ) AA
+          WHERE AA.pageNum = #{page}
+          ORDER BY AA.rnum
+   </select>
+   
+   <!--  -->
+   <select id="selectPagingListCnt" parameterType="PagingVO" resultType="HashMap">
+      SELECT COUNT(*) AS TOTAL_TOT_CNT,
+              CEIL(COUNT(*) / #{rows}) AS TOTAL_PAGE
+          FROM board
+          WHERE 1 = 1
+          ORDER BY B_IDX ASC
+   </select>	
+
+
+</mapper>
